@@ -257,3 +257,44 @@ async fn serial_test_modify_line_should_close_sketch() {
         )
     );
 }
+
+#[tokio::test(flavor = "multi_thread")]
+async fn serial_test_modify_sketch_split_variables() {
+    let code = r#"const part001 = startSketchAt([5.5229, 5.25217])
+  |> line([10.50433, -1.19122], %)
+  |> line([8.01362, -5.48731], %)
+
+const part002 = part001
+  |> line([-1.02877, -6.76825], %)
+  |> line([-11.53311, 2.81559], %)
+"#;
+
+    let (mut engine, program, sketch_id) = setup(code, "part001").await.unwrap();
+    let mut new_program = program.clone();
+    let new_code = modify_ast_for_sketch(&mut engine, &mut new_program, "part001", sketch_id)
+        .await
+        .unwrap();
+
+    // Make sure the code is the same.
+    assert_eq!(new_code, code,);
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn serial_test_modify_sketch_split_variables_pipe_substitution() {
+    let code = r#"const part001 = startSketchAt([5.5229, 5.25217])
+  |> line([10.50433, -1.19122], %)
+  |> line([8.01362, -5.48731], %)
+
+const part002 = line([-1.02877, -6.76825], part001)
+  |> line([-11.53311, 2.81559], %)
+"#;
+
+    let (mut engine, program, sketch_id) = setup(code, "part001").await.unwrap();
+    let mut new_program = program.clone();
+    let new_code = modify_ast_for_sketch(&mut engine, &mut new_program, "part001", sketch_id)
+        .await
+        .unwrap();
+
+    // Make sure the code is the same.
+    assert_eq!(new_code, code,);
+}
